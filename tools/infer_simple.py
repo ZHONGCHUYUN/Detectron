@@ -140,6 +140,11 @@ def main(args):
     else:
         im_list = [args.im_or_folder]
 
+    #################insert################
+    keypoints = []
+    boxes = []
+
+    ##################end##################
     for i, im_name in enumerate(im_list):
         out_name = os.path.join(
             args.output_dir, '{}'.format(os.path.basename(im_name) + '.' + args.output_ext)
@@ -151,6 +156,10 @@ def main(args):
         with c2_utils.NamedCudaScope(0):
             cls_boxes, cls_segms, cls_keyps = infer_engine.im_detect_all(
                 model, im, None, timers=timers
+###############insert###################
+            keypoints.append(cls_keyps)
+            boxes.append(cls_boxes)
+################end#####################
             )
         logger.info('Inference time: {:.3f}s'.format(time.time() - t))
         for k, v in timers.items():
@@ -176,6 +185,9 @@ def main(args):
             ext=args.output_ext,
             out_when_no_box=args.out_when_no_box
         )
+        ###################insert###############################
+        np.savez_compressed(os.path.join(args.output_dir,"detectron.npz"),boxes = boxes, keypoints = keypoints)
+        ###################end##################################
 
 
 if __name__ == '__main__':
