@@ -139,12 +139,11 @@ def main(args):
         im_list = glob.iglob(args.im_or_folder + '/*.' + args.image_ext)
     else:
         im_list = [args.im_or_folder]
-
-    #################insert################
+##################insert code######################
     keypoints = []
     boxes = []
+###################end############################
 
-    ##################end##################
     for i, im_name in enumerate(im_list):
         out_name = os.path.join(
             args.output_dir, '{}'.format(os.path.basename(im_name) + '.' + args.output_ext)
@@ -156,11 +155,22 @@ def main(args):
         with c2_utils.NamedCudaScope(0):
             cls_boxes, cls_segms, cls_keyps = infer_engine.im_detect_all(
                 model, im, None, timers=timers
-###############insert###################
-            keypoints.append(cls_keyps)
-            boxes.append(cls_boxes)
-################end#####################
-            )
+                )
+
+###################insert code#####################
+        best_match = np.argmax(cls_boxes[1][:,4])
+        inferred_boxes = []
+        inferred_boxes.append(cls_boxes[1][best_match])
+        boxes_list = [[], np.array(inferred_boxes)]
+
+        inferred_keypt_sets = []
+        inferred_keypt_sets.append(np.array(cls_keyps[1][best_match]))
+        keypt_set_list = [[], inferred_keypt_sets]
+
+        keypoints.append(keypt_set_list)
+        boxes.append(box_list)
+#########################end#############################
+
         logger.info('Inference time: {:.3f}s'.format(time.time() - t))
         for k, v in timers.items():
             logger.info(' | {}: {:.3f}s'.format(k, v.average_time))
@@ -184,10 +194,24 @@ def main(args):
             kp_thresh=args.kp_thresh,
             ext=args.output_ext,
             out_when_no_box=args.out_when_no_box
-        )
-        ###################insert###############################
-        np.savez_compressed(os.path.join(args.output_dir,"detectron.npz"),boxes = boxes, keypoints = keypoints)
-        ###################end##################################
+            )
+#############################insert code#########################
+    np.savez_compressed(os.path.join(args.output_dir, "Walking.output.mp4.npz"), boxes = boxes, keypoints = keypoints)
+    output = {}
+    output['S1'] = {}
+    positions = []
+    
+    for i in range(len(keypoints)):
+        pts = keypoints[i][1][0]
+        pts = np.transpose(pts)
+        pts = np.delete(pts, 3, 1)
+        pts = np.append(ps, np.zeros((15,3)), axis=0)
+        position.append(apts)
+    position = np.array(positions)
+    output['S1']['Walking']=position.astype('float32')
+
+    np.savez_compressed(os.path.join(args.output_dir, "data_3d_h36m.npz"), position_3d = output)
+##############################end#############################
 
 
 if __name__ == '__main__':
